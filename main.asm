@@ -7,25 +7,27 @@ STDOUT equ 1
 STDERR equ 2
 
 section .data
-	oddMsg db "Your number is odd", 0x10, 0x0
+	oddMsg db "Your number is odd", 0xA, 0x0
 	oddLen equ $ - oddMsg
-	evenMsg db "Your number is even", 0x10, 0x0
+	evenMsg db "Your number is even", 0xA, 0x0
 	evenLen equ $ - evenMsg
+	quoteMsg db "'", 0x0
+	quoteLen equ $ - quoteMsg
 	askNumMsg db "Please enter a number: ", 0x0
 	askNumLen equ $ - askNumMsg
-	newLineMsg db "", 0x10, 0x0
+	newLineMsg db 0xA, 0x0
 	newLineLen equ $ - newLineMsg
-	displayNumMsg db "You have entered ", 0x0
+	displayNumMsg db "You entered ", 0x0
 	displayNumLen equ $ - displayNumMsg
-	containsLetterMsg db "Your input contains a letter", 0x10, 0x0
+	containsLetterMsg db "Your input contains a letter", 0xA, 0x0
 	containsLetterLen equ $ - containsLetterMsg
-	unexpectedErrorMsg db "Unexpected error occurred", 0x10, 0x0
+	unexpectedErrorMsg db "Unexpected error occurred", 0xA, 0x0
 	unexpectedErrorLen equ $ - unexpectedErrorMsg
 
 section .bss
 	input resb 8
 	exitCode resb 1
-	
+
 section .text
 	global _start
 
@@ -61,7 +63,7 @@ _start:
 	inputLoop:
 	cmp byte[input+r8], 0x0
 	je end
-	cmp byte[input+r8], 0x10
+	cmp byte[input+r8], 0xA
 	je end
 
 	;cmp byte[input+r8], 0x30
@@ -73,7 +75,7 @@ _start:
 	jmp inputLoop
 
 	end:
-	sub r8, 2
+	dec r8
 
 	cmp byte[input+r8], 0x30
 	je even
