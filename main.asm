@@ -7,26 +7,36 @@ STDOUT equ 1
 STDERR equ 2
 
 section .data
+	oddMsg db "Your number is odd", 0x10, 0x0
+	oddLen equ $ - oddMsg
+	evenMsg db "Your number is even", 0x10, 0x0
+	evenLen equ $ - evenMsg
 	askNumMsg db "Please enter a number: ", 0x0
-	askNumMsgLen equ $ - askNumMsg
+	askNumLen equ $ - askNumMsg
+	newLineMsg db "", 0x10, 0x0
+	newLineLen equ $ - newLineMsg
 	displayNumMsg db "You have entered ", 0x0
-	displayNumMsgLen equ $ - displayNumMsg
+	displayNumLen equ $ - displayNumMsg
 	containsLetterMsg db "Your input contains a letter", 0x10, 0x0
-	containsLetterMsgLen equ $ - containsLetterMsg
+	containsLetterLen equ $ - containsLetterMsg
 	unexpectedErrorMsg db "Unexpected error occurred", 0x10, 0x0
-	unexpectedErrorMsgLen equ $ - unexpectedErrorMsg
+	unexpectedErrorLen equ $ - unexpectedErrorMsg
 
 section .bss
 	input resb 8
-
+	exitCode resb 1
+	
 section .text
 	global _start
 
 _start:
+	mov r8, 0
+	mov [exitCode], r8
+
 	mov rax, SYS_WRITE
 	mov rbx, STDOUT
 	mov rcx, askNumMsg
-	mov rdx, askNumMsgLen
+	mov rdx, askNumLen
 	int 80h
 
 	mov rax, SYS_READ
@@ -38,7 +48,7 @@ _start:
 	mov rax, SYS_WRITE
 	mov rbx, STDOUT
 	mov rcx, displayNumMsg
-	mov rdx, displayNumMsgLen
+	mov rdx, displayNumLen
 	int 80h
 
 	mov rax, SYS_WRITE
@@ -48,51 +58,76 @@ _start:
 	int 80h
 
 	mov r8, 0
-	mov r9, input
 	inputLoop:
-	mov r10, 0
-
-	numLoop:
+	cmp byte[input+r8], 0x0
+	je end
 	cmp byte[input+r8], 0x10
-	je exit
-
-	cmp byte[input+r8], 0x30
 	je end
 
-	inc r10
-	cmp r10, 10
-	jne numLoop
+	;cmp byte[input+r8], 0x30
+	;jl containsLetters
+	;cmp byte[input+r8], 0x39
+	;jg containsLetters
 
 	inc r8
 	jmp inputLoop
 
 	end:
-	add r9, r8
+	sub r8, 2
+
+	cmp byte[input+r8], 0x30
+	je even
+	cmp byte[input+r8], 0x32
+	je even
+	cmp byte[input+r8], 0x34
+	je even
+	cmp byte[input+r8], 0x36
+	je even
+	cmp byte[input+r8], 0x38
+	je even
+
+	jmp odd
+
+	odd:
 	mov rax, SYS_WRITE
 	mov rbx, STDOUT
-	mov rcx, r9
-	mov rdx, 8
+	mov rcx, oddMsg
+	mov rdx, oddLen
 	int 80h
 	jmp exit
 
-	containsLetter:
+	even:
 	mov rax, SYS_WRITE
 	mov rbx, STDOUT
-	mov rcx, containsLetterMsg
-	mov rdx, containsLetterMsgLen
+	mov rcx, evenMsg
+	mov rdx, evenLen
 	int 80h
+	jmp exit
+
+	containsLetters:
+	mov rax, SYS_WRITE
+	mov rbx, STDERR
+	mov rcx, containsLetterMsg
+	mov rdx, containsLetterLen
+	int 80h
+
+	mov r8, 1
+	mov [exitCode], r8
 	jmp exit
 
 	unexpectedError:
-	;mov rax, SYS_WRITE
-	;mov rbx, STDOUT
-	;mov rcx, unexpectedErrorMsg
-	;mov rdx, unexpectedErrorMsgLen
-	;int 80h
+	mov rax, SYS_WRITE
+	mov rbx, STDERR
+	mov rcx, unexpectedErrorMsg
+	mov rdx, unexpectedErrorLen
+	int 80h
+
+	mov r8, 1
+	mov [exitCode], r8
 	jmp exit
 
 	exit:
 	mov rax, SYS_EXIT
-	mov rbx, 0
+	mov rbx, [exitCode]
 	int 80h
 
