@@ -11,12 +11,10 @@ section .data
 	oddLen equ $ - oddMsg
 	evenMsg db "Your number is even", 0xA, 0x0
 	evenLen equ $ - evenMsg
-	quoteMsg db "'", 0x0
-	quoteLen equ $ - quoteMsg
+	emptyMsg db "Your input is empty", 0xA, 0x0
+	emptyLen equ $ - emptyMsg
 	askNumMsg db "Please enter a number: ", 0x0
 	askNumLen equ $ - askNumMsg
-	newLineMsg db 0xA, 0x0
-	newLineLen equ $ - newLineMsg
 	displayNumMsg db "You entered ", 0x0
 	displayNumLen equ $ - displayNumMsg
 	containsLetterMsg db "Your input contains a letter", 0xA, 0x0
@@ -32,9 +30,6 @@ section .text
 	global _start
 
 _start:
-	mov r8, 0
-	mov [exitCode], r8
-
 	mov rax, SYS_WRITE
 	mov rbx, STDOUT
 	mov rcx, askNumMsg
@@ -62,20 +57,23 @@ _start:
 	mov r8, 0
 	inputLoop:
 	cmp byte[input+r8], 0x0
-	je end
+	je unexpectedError
 	cmp byte[input+r8], 0xA
 	je end
 
-	;cmp byte[input+r8], 0x30
-	;jl containsLetters
-	;cmp byte[input+r8], 0x39
-	;jg containsLetters
+	cmp byte[input+r8], 0x30
+	jl containsLetters
+	cmp byte[input+r8], 0x39
+	jg containsLetters
 
 	inc r8
 	jmp inputLoop
 
 	end:
 	dec r8
+
+	cmp r8, -1
+	je empty
 
 	cmp byte[input+r8], 0x30
 	je even
@@ -96,7 +94,7 @@ _start:
 	mov rcx, oddMsg
 	mov rdx, oddLen
 	int 80h
-	jmp exit
+	jmp success
 
 	even:
 	mov rax, SYS_WRITE
@@ -104,7 +102,15 @@ _start:
 	mov rcx, evenMsg
 	mov rdx, evenLen
 	int 80h
-	jmp exit
+	jmp success
+
+	empty:
+	mov rax, SYS_WRITE
+	mov rbx, STDERR
+	mov rcx, emptyMsg
+	mov rdx, emptyLen
+	int 80h
+	jmp fail
 
 	containsLetters:
 	mov rax, SYS_WRITE
@@ -112,10 +118,7 @@ _start:
 	mov rcx, containsLetterMsg
 	mov rdx, containsLetterLen
 	int 80h
-
-	mov r8, 1
-	mov [exitCode], r8
-	jmp exit
+	jmp fail
 
 	unexpectedError:
 	mov rax, SYS_WRITE
@@ -123,9 +126,16 @@ _start:
 	mov rcx, unexpectedErrorMsg
 	mov rdx, unexpectedErrorLen
 	int 80h
+	jmp fail
 
-	mov r8, 1
-	mov [exitCode], r8
+	success:
+	mov r9, 0
+	mov [exitCode], r9
+	jmp exit
+
+	fail:
+	mov r9, 1
+	mov [exitCode], r9
 	jmp exit
 
 	exit:
